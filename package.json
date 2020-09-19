@@ -19,6 +19,7 @@
     "watch": "tsc -watch",
     "compile": "tsc",
     "test": "tape -r ./out/tests/all.test.js",
+    "testtoken": "tsc&&tape -r ./out/tests/tokenization.test.js",
     "benchmark": "node benchmark/benchmark.js",
     "inspect": "node out/tests/inspect.js",
     "tmconvert": "node scripts/convert.js",

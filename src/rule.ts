@@ -45,6 +45,7 @@ export abstract class Rule {
 	public readonly id: number;
 
 	private readonly _nameIsCapturing: boolean;
+	/**规则中的name */
 	private readonly _name: string | null;
 
 	private readonly _contentNameIsCapturing: boolean;
@@ -648,8 +649,9 @@ export class RuleFactory {
 	public static getCompiledRuleId(desc: IRawRule, helper: IRuleFactoryHelper, repository: IRawRepository): number {
 		if (!desc.id) {
 			helper.registerRule((id) => {
+				//自增id 赋值
 				desc.id = id;
-
+//普通match匹配
 				if (desc.match) {
 					return new MatchRule(
 						desc.$vscodeTextmateLocation,
@@ -659,7 +661,7 @@ export class RuleFactory {
 						RuleFactory._compileCaptures(desc.captures, helper, repository)
 					);
 				}
-
+//doc 没match,没begin,没patterns,include规则
 				if (typeof desc.begin === 'undefined') {
 					if (desc.repository) {
 						repository = mergeObjects({}, repository, desc.repository);
@@ -688,7 +690,7 @@ export class RuleFactory {
 						RuleFactory._compilePatterns(desc.patterns, helper, repository)
 					);
 				}
-
+//doc begin end
 				return new BeginEndRule(
 					desc.$vscodeTextmateLocation,
 					desc.id,

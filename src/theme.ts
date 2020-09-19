@@ -42,7 +42,7 @@ export class ParsedThemeRule {
 		this.background = background;
 	}
 }
-
+/**rrggbb rrggbbaa rgb rgba */
 function isValidHexColor(hex: string): boolean {
 	if (/^#[0-9a-f]{6}$/i.test(hex)) {
 		// #rrggbb
@@ -69,6 +69,7 @@ function isValidHexColor(hex: string): boolean {
 
 /**
  * Parse a raw theme into rules.
+ * 传入的配置解析
  */
 export function parseTheme(source: IRawTheme | undefined): ParsedThemeRule[] {
 	if (!source) {
@@ -81,19 +82,19 @@ export function parseTheme(source: IRawTheme | undefined): ParsedThemeRule[] {
 	let result: ParsedThemeRule[] = [], resultLen = 0;
 	for (let i = 0, len = settings.length; i < len; i++) {
 		let entry = settings[i];
-
+// 必须有设置的样式
 		if (!entry.settings) {
 			continue;
 		}
-
+/**token */
 		let scopes: string[];
 		if (typeof entry.scope === 'string') {
 			let _scope = entry.scope;
 
-			// remove leading commas
+			// remove leading commas 去掉前逗号
 			_scope = _scope.replace(/^[,]+/, '');
 
-			// remove trailing commans
+			// remove trailing commans 去掉后逗号
 			_scope = _scope.replace(/[,]+$/, '');
 
 			scopes = _scope.split(',');
@@ -102,7 +103,7 @@ export function parseTheme(source: IRawTheme | undefined): ParsedThemeRule[] {
 		} else {
 			scopes = [''];
 		}
-
+/**字体样式 */
 		let fontStyle: number = FontStyle.NotSet;
 		if (typeof entry.settings.fontStyle === 'string') {
 			fontStyle = FontStyle.None;
@@ -123,12 +124,14 @@ export function parseTheme(source: IRawTheme | undefined): ParsedThemeRule[] {
 				}
 			}
 		}
-
+/**
+ * 前景
+ */
 		let foreground: string | null = null;
 		if (typeof entry.settings.foreground === 'string' && isValidHexColor(entry.settings.foreground)) {
 			foreground = entry.settings.foreground;
 		}
-
+/**背景 */
 		let background: string | null = null;
 		if (typeof entry.settings.background === 'string' && isValidHexColor(entry.settings.background)) {
 			background = entry.settings.background;
@@ -136,9 +139,9 @@ export function parseTheme(source: IRawTheme | undefined): ParsedThemeRule[] {
 
 		for (let j = 0, lenJ = scopes.length; j < lenJ; j++) {
 			let _scope = scopes[j].trim();
-
+/**空格分离 */
 			let segments = _scope.split(' ');
-
+/**最后 */
 			let scope = segments[segments.length - 1];
 			let parentScopes: string[] | null = null;
 			if (segments.length > 1) {
@@ -164,17 +167,19 @@ export function parseTheme(source: IRawTheme | undefined): ParsedThemeRule[] {
  * Resolve rules (i.e. inheritance).
  */
 function resolveParsedThemeRules(parsedThemeRules: ParsedThemeRule[], _colorMap: string[] | undefined): Theme {
-
+// 域排序,靠字符串
 	// Sort rules lexicographically, and then by index if necessary
 	parsedThemeRules.sort((a, b) => {
 		let r = strcmp(a.scope, b.scope);
 		if (r !== 0) {
 			return r;
 		}
+		// 如果普通域相同排父域
 		r = strArrCmp(a.parentScopes, b.parentScopes);
 		if (r !== 0) {
 			return r;
 		}
+		// 如果都相等比较索引(这个索引其实是规则的索引)
 		return a.index - b.index;
 	});
 
@@ -182,6 +187,7 @@ function resolveParsedThemeRules(parsedThemeRules: ParsedThemeRule[], _colorMap:
 	let defaultFontStyle = FontStyle.None;
 	let defaultForeground = '#000000';
 	let defaultBackground = '#ffffff';
+	// 处理默认规则的域
 	while (parsedThemeRules.length >= 1 && parsedThemeRules[0].scope === '') {
 		let incomingDefaults = parsedThemeRules.shift()!;
 		if (incomingDefaults.fontStyle !== FontStyle.NotSet) {
@@ -194,9 +200,10 @@ function resolveParsedThemeRules(parsedThemeRules: ParsedThemeRule[], _colorMap:
 			defaultBackground = incomingDefaults.background;
 		}
 	}
+	// 设置默认颜色映射,加速
 	let colorMap = new ColorMap(_colorMap);
 	let defaults = new ThemeTrieElementRule(0, null, defaultFontStyle, colorMap.getId(defaultForeground), colorMap.getId(defaultBackground));
-
+/**三元素 */
 	let root = new ThemeTrieElement(new ThemeTrieElementRule(0, null, FontStyle.NotSet, 0, 0), []);
 	for (let i = 0, len = parsedThemeRules.length; i < len; i++) {
 		let rule = parsedThemeRules[i];
@@ -255,6 +262,16 @@ export class ColorMap {
 
 export class Theme {
 
+	/**
+	 *
+	 *
+	 * @author cyia
+	 * @date 2020-09-06
+	 * @static
+	 * @param source vscode 主题
+	 * @param [colorMap] 可选
+	 * @returns
+	 */
 	public static createFromRawTheme(source: IRawTheme | undefined, colorMap?: string[]): Theme {
 		return this.createFromParsedTheme(parseTheme(source), colorMap);
 	}

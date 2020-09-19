@@ -113,6 +113,16 @@ export class Registry {
 	 * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
 	 * Please do not use language id 0.
 	 */
+	/**
+	 *
+	 *
+	 * @author cyia
+	 * @date 2020-09-06
+	 * @param initialScopeName 域名
+	 * @param initialLanguage monaco的id
+	 * @param configuration 空的
+	 * @returns
+	 */
 	public loadGrammarWithConfiguration(initialScopeName: string, initialLanguage: number, configuration: IGrammarConfiguration): Promise<IGrammar | null> {
 		return this._loadGrammar(initialScopeName, initialLanguage, configuration.embeddedLanguages, configuration.tokenTypes);
 	}
@@ -123,7 +133,7 @@ export class Registry {
 	public loadGrammar(initialScopeName: string): Promise<IGrammar | null> {
 		return this._loadGrammar(initialScopeName, 0, null, null);
 	}
-
+/**从载入语法函数中加载一个,还会添加同步注册 */
 	private async _doLoadSingleGrammar(scopeName: string): Promise<void> {
 		const grammar = await this._options.loadGrammar(scopeName);
 		if (grammar) {
@@ -173,7 +183,7 @@ export class Registry {
 		while (Q.length > 0) {
 			const q = Q;
 			Q = [];
-
+//等待语法载入完成
 			await Promise.all(q.map(request => this._loadSingleGrammar(request.scopeName)));
 
 			const deps = new ScopeDependencyCollector();

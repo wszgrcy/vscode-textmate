@@ -11,6 +11,7 @@ export interface ILocation {
 }
 
 export interface ILocatable {
+	/**配置中没这个字段 */
 	readonly $vscodeTextmateLocation?: ILocation;
 }
 
@@ -28,18 +29,21 @@ export interface IRawGrammar extends ILocatable {
 
 export interface IRawRepositoryMap {
 	[name: string]: IRawRule;
+	/**自身 */
 	$self: IRawRule;
+	/**基准或者自身 */
 	$base: IRawRule;
 }
 
 export type IRawRepository = IRawRepositoryMap & ILocatable;
-
+/**原始规则 */
 export interface IRawRule extends ILocatable {
 	id?: number;
 
 	readonly include?: string;
-
+/**根域会加入 */
 	readonly name?: string;
+	/**begin end中间的 */
 	readonly contentName?: string;
 
 	readonly match?: string;
@@ -48,10 +52,11 @@ export interface IRawRule extends ILocatable {
 	readonly beginCaptures?: IRawCaptures;
 	readonly end?: string;
 	readonly endCaptures?: IRawCaptures;
+	/**没用过 */
 	readonly while?: string;
 	readonly whileCaptures?: IRawCaptures;
 	readonly patterns?: IRawRule[];
-
+/**感觉没套娃 */
 	readonly repository?: IRawRepository;
 
 	readonly applyEndPatternLast?: boolean;

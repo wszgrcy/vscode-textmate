@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import { IOnigCaptureIndex } from './types';
-
+/**算是深拷贝 */
 export function clone<T>(something: T): T {
 	return doClone(something);
 }

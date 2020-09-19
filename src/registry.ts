@@ -11,6 +11,7 @@ import { IOnigLib } from './types';
 export class SyncRegistry implements IGrammarRepository {
 
 	private readonly _grammars: { [scopeName: string]: Grammar; };
+	/**原始语法 */
 	private readonly _rawGrammars: { [scopeName: string]: IRawGrammar; };
 	private readonly _injectionGrammars: { [scopeName: string]: string[]; };
 	private _theme: Theme;

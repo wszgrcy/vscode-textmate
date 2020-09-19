@@ -376,9 +376,11 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 
 	private _rootId: number;
 	private _lastRuleId: number;
+	/**配置文件处理过的规则 */
 	private readonly _ruleId2desc: Rule[];
 	private readonly _includedGrammars: { [scopeName: string]: IRawGrammar; };
 	private readonly _grammarRepository: IGrammarRepository;
+	/**这个应该是传入的规则稍微加了点,初始化的base是self */
 	private readonly _grammar: IRawGrammar;
 	private _injections: Injection[] | null;
 	private readonly _scopeMetadataProvider: ScopeMetadataProvider;
@@ -467,6 +469,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 	}
 
 	public registerRule<T extends Rule>(factory: (id: number) => T): T {
+		/**自增id */
 		const id = (++this._lastRuleId);
 		const result = factory(id);
 		this._ruleId2desc[id] = result;
@@ -518,7 +521,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 			const rawDefaultMetadata = this._scopeMetadataProvider.getDefaultMetadata();
 			const defaultTheme = rawDefaultMetadata.themeData![0];
 			const defaultMetadata = StackElementMetadata.set(0, rawDefaultMetadata.languageId, rawDefaultMetadata.tokenType, defaultTheme.fontStyle, defaultTheme.foreground, defaultTheme.background);
-
+/**根的域名 */
 			const rootScopeName = this.getRule(this._rootId).getName(null, null);
 			const rawRootMetadata = this._scopeMetadataProvider.getMetadataForScope(rootScopeName);
 			const rootMetadata = ScopeListElement.mergeMetadata(defaultMetadata, null, rawRootMetadata);
@@ -532,7 +535,9 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 		}
 
 		lineText = lineText + '\n';
+		/**调用库 */
 		const onigLineText = this.createOnigString(lineText);
+		/**字符串长度 */
 		const lineLength = onigLineText.content.length;
 		const lineTokens = new LineTokens(emitBinaryTokens, lineText, this._tokenTypeMatchers);
 		const nextState = _tokenizeString(this, onigLineText, isFirstLine, 0, prevState, lineTokens, true);
@@ -552,12 +557,14 @@ function disposeOnigString(str: OnigString) {
 		str.dispose();
 	}
 }
-
+/**将默认配置深拷贝,加入一些$的属性 */
 function initGrammar(grammar: IRawGrammar, base: IRawRule | null | undefined): IRawGrammar {
 	grammar = clone(grammar);
-
+//匹配规则
 	grammar.repository = grammar.repository || <any>{};
+	// 多了一个self,也就是把根同样加入了
 	grammar.repository.$self = {
+		//这个字段没有
 		$vscodeTextmateLocation: grammar.$vscodeTextmateLocation,
 		patterns: grammar.patterns,
 		name: grammar.scopeName
@@ -1444,6 +1451,7 @@ class LineTokens {
 	private readonly _emitBinaryTokens: boolean;
 	/**
 	 * defined only if `DebugFlags.InDebugMode`.
+	 * 非调试模式没用
 	 */
 	private readonly _lineText: string | null;
 	/**
@@ -1459,6 +1467,14 @@ class LineTokens {
 
 	private readonly _tokenTypeOverrides: TokenTypeMatcher[];
 
+	/**
+	 *Creates an instance of LineTokens.
+	 * @author cyia
+	 * @date 2020-09-06
+	 * @param emitBinaryTokens 默认true
+	 * @param lineText 字符串
+	 * @param tokenTypeOverrides 空数组
+	 */
 	constructor(emitBinaryTokens: boolean, lineText: string, tokenTypeOverrides: TokenTypeMatcher[]) {
 		this._emitBinaryTokens = emitBinaryTokens;
 		this._tokenTypeOverrides = tokenTypeOverrides;
