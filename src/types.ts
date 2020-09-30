@@ -14,7 +14,7 @@ export interface ILocatable {
 	/**配置中没这个字段 */
 	readonly $vscodeTextmateLocation?: ILocation;
 }
-
+/**读文件的相关配置 */
 export interface IRawGrammar extends ILocatable {
 	repository: IRawRepository;
 	readonly scopeName: string;
@@ -37,6 +37,7 @@ export interface IRawRepositoryMap {
 
 export type IRawRepository = IRawRepositoryMap & ILocatable;
 /**原始规则 */
+/**原始语法规则? */
 export interface IRawRule extends ILocatable {
 	id?: number;
 

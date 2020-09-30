@@ -44,6 +44,7 @@ export interface RegistryOptions {
 
 /**
  * A map from scope name to a language id. Please do not use language id 0.
+ * 内嵌语言的排序
  */
 export interface IEmbeddedLanguagesMap {
 	[scopeName: string]: number;
@@ -129,6 +130,7 @@ export class Registry {
 
 	/**
 	 * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
+	 * 载入某语法,只使用scopename
 	 */
 	public loadGrammar(initialScopeName: string): Promise<IGrammar | null> {
 		return this._loadGrammar(initialScopeName, 0, null, null);

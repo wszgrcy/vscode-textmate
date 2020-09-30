@@ -4,10 +4,11 @@
 
 import { IOnigCaptureIndex } from './types';
 /**算是深拷贝 */
+/**暴力深拷贝方法 */
 export function clone<T>(something: T): T {
 	return doClone(something);
 }
-
+/**关于对象/数组的深拷贝 */
 function doClone(something: any): any {
 	if (Array.isArray(something)) {
 		return cloneArray(something);
@@ -17,7 +18,7 @@ function doClone(something: any): any {
 	}
 	return something;
 }
-
+/**数组深拷贝 */
 function cloneArray(arr: any[]): any[] {
 	let r: any[] = [];
 	for (let i = 0, len = arr.length; i < len; i++) {
@@ -25,7 +26,7 @@ function cloneArray(arr: any[]): any[] {
 	}
 	return r;
 }
-
+/**对象深拷贝 */
 function cloneObj(obj: any): any {
 	let r: any = {};
 	for (let key in obj) {
@@ -33,7 +34,7 @@ function cloneObj(obj: any): any {
 	}
 	return r;
 }
-
+/**类似Object.assign */
 export function mergeObjects(target: any, ...sources: any[]): any {
 	sources.forEach(source => {
 		for (let key in source) {
@@ -42,7 +43,7 @@ export function mergeObjects(target: any, ...sources: any[]): any {
 	});
 	return target;
 }
-
+/**获得最后一级名字 */
 export function basename(path: string): string {
 	const idx = ~path.lastIndexOf('/') || ~path.lastIndexOf('\\');
 	if (idx === 0) {
@@ -53,18 +54,22 @@ export function basename(path: string): string {
 		return path.substr(~idx + 1);
 	}
 }
-
+/**
+ * 类似这种匹配
+ * ${323:/downcase}
+ * $123
+ */
 let CAPTURING_REGEX_SOURCE = /\$(\d+)|\${(\d+):\/(downcase|upcase)}/;
 
 export class RegexSource {
-
+/**是否匹配正则上${323:/downcase}  $123*/
 	public static hasCaptures(regexSource: string | null): boolean {
 		if (regexSource === null) {
 			return false;
 		}
 		return CAPTURING_REGEX_SOURCE.test(regexSource);
 	}
-
+/**根据captureIndices用captureSource替换相关内容如果匹配到 */
 	public static replaceCaptures(regexSource: string, captureSource: string, captureIndices: IOnigCaptureIndex[]): string {
 		return regexSource.replace(CAPTURING_REGEX_SOURCE, (match: string, index: string, commandIndex: string, command: string) => {
 			let capture = captureIndices[parseInt(index || commandIndex, 10)];

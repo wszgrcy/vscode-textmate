@@ -1,7 +1,7 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
-
+/**解析语法文件的 */
 import { IRawGrammar } from './types';
 import * as plist from './plist';
 import { DebugFlags } from './debug';

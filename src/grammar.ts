@@ -28,6 +28,20 @@ export const enum TemporaryStandardTokenType {
 	MetaEmbedded = 8
 }
 
+/**
+ *
+ *
+ * @author cyia
+ * @date 2020-09-25
+ * @export
+ * @param grammar 原始语法配置
+ * @param initialLanguage
+ * @param embeddedLanguages
+ * @param tokenTypes
+ * @param grammarRepository 注册仓库
+ * @param onigLib wasm里的
+ * @returns
+ */
 export function createGrammar(grammar: IRawGrammar, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap | null, tokenTypes: ITokenTypeMap | null, grammarRepository: IGrammarRepository & IThemeProvider, onigLib: IOnigLib): Grammar {
 	return new Grammar(grammar, initialLanguage, embeddedLanguages, tokenTypes, grammarRepository, onigLib);//TODO
 }
@@ -178,7 +192,7 @@ export interface Injection {
 	readonly ruleId: number;
 	readonly grammar: IRawGrammar;
 }
-
+/**相等true或thisScopeName与scopeName的关系为xxx.yyysdfsdf=xxx */
 function scopesAreMatching(thisScopeName: string, scopeName: string): boolean {
 	if (!thisScopeName) {
 		return false;
@@ -189,7 +203,7 @@ function scopesAreMatching(thisScopeName: string, scopeName: string): boolean {
 	const len = scopeName.length;
 	return thisScopeName.length > len && thisScopeName.substr(0, len) === scopeName && thisScopeName[len] === '.';
 }
-
+/**两个列表比较 scopes(1)是否比identifers(0)大于等于 */
 function nameMatcher(identifers: string[], scopes: string[]) {
 	if (scopes.length < identifers.length) {
 		return false;
@@ -206,6 +220,17 @@ function nameMatcher(identifers: string[], scopes: string[]) {
 	});
 }
 
+/**
+ * 收集注入点?
+ *
+ * @author cyia
+ * @date 2020-09-29
+ * @param result 结果引用
+ * @param selector 注入点名字
+ * @param rule 注入原始规则
+ * @param ruleFactoryHelper 调用他的this
+ * @param grammar 原始语法
+ */
 function collectInjections(result: Injection[], selector: string, rule: IRawRule, ruleFactoryHelper: IRuleFactoryHelper, grammar: IRawGrammar): void {
 	const matchers = createMatchers(selector, nameMatcher);
 	const ruleId = RuleFactory.getCompiledRuleId(rule, ruleFactoryHelper, grammar.repository);
@@ -232,7 +257,7 @@ export class ScopeMetadata {
 		this.themeData = themeData;
 	}
 }
-
+/**拿域名索引,主题的元数据 */
 class ScopeMetadataProvider {
 
 	private readonly _initialLanguage: number;
@@ -240,9 +265,10 @@ class ScopeMetadataProvider {
 	private _cache: Map<string, ScopeMetadata>;
 	private _defaultMetaData: ScopeMetadata;
 	private readonly _embeddedLanguages: IEmbeddedLanguagesMap;
+	/**内嵌语言的大正则,匹配各种语言的 */
 	private readonly _embeddedLanguagesRegex: RegExp | null;
 
-	constructor(initialLanguage: number, themeProvider: IThemeProvider, embeddedLanguages: IEmbeddedLanguagesMap | null) {
+	constructor(/**0*/initialLanguage: number, themeProvider: IThemeProvider,/**null */ embeddedLanguages: IEmbeddedLanguagesMap | null) {
 		this._initialLanguage = initialLanguage;
 		this._themeProvider = themeProvider;
 		this._cache = new Map();
@@ -253,7 +279,7 @@ class ScopeMetadataProvider {
 			[this._themeProvider.getDefaults()]
 		);
 
-		// embeddedLanguages handling
+		// embeddedLanguages handling 没用的验证
 		this._embeddedLanguages = Object.create(null);
 
 		if (embeddedLanguages) {
@@ -271,7 +297,7 @@ class ScopeMetadataProvider {
 			}
 		}
 
-		// create the regex
+		// create the regex 名字转义?
 		const escapedScopes = Object.keys(this._embeddedLanguages).map((scopeName) => ScopeMetadataProvider._escapeRegExpCharacters(scopeName));
 		if (escapedScopes.length === 0) {
 			// no scopes registered
@@ -282,7 +308,7 @@ class ScopeMetadataProvider {
 			this._embeddedLanguagesRegex = new RegExp(`^((${escapedScopes.join(')|(')}))($|\\.)`, '');
 		}
 	}
-
+/**主题变更?,会将默认主题元数据默认的排序 */
 	public onDidChangeTheme(): void {
 		this._cache = new Map();
 		this._defaultMetaData = new ScopeMetadata(
@@ -299,12 +325,14 @@ class ScopeMetadataProvider {
 
 	/**
 	 * Escapes regular expression characters in a given string
+	 * 特殊符号替换 转义
 	 */
 	private static _escapeRegExpCharacters(value: string): string {
 		return value.replace(/[\-\\\{\}\*\+\?\|\^\$\.\,\[\]\(\)\#\s]/g, '\\$&');
 	}
-
+/**null域名元数据 */
 	private static _NULL_SCOPE_METADATA = new ScopeMetadata('', 0, 0, null);
+	/**通过域名获得元数据,没有的话会先拿然后设置缓存 */
 	public getMetadataForScope(scopeName: string | null): ScopeMetadata {
 		if (scopeName === null) {
 			return ScopeMetadataProvider._NULL_SCOPE_METADATA;
@@ -321,6 +349,7 @@ class ScopeMetadataProvider {
 	private _doGetMetadataForScope(scopeName: string): ScopeMetadata {
 		const languageId = this._scopeToLanguage(scopeName);
 		const standardTokenType = this._toStandardTokenType(scopeName);
+		/**主题匹配 */
 		const themeData = this._themeProvider.themeMatch(scopeName);
 
 		return new ScopeMetadata(scopeName, languageId, standardTokenType, themeData);
@@ -329,6 +358,7 @@ class ScopeMetadataProvider {
 	/**
 	 * Given a produced TM scope, return the language that token describes or null if unknown.
 	 * e.g. source.html => html, source.css.embedded.html => css, punctuation.definition.tag.html => null
+	 * 通过域名拿索引
 	 */
 	private _scopeToLanguage(scope: string): number {
 		if (!scope) {
@@ -353,6 +383,7 @@ class ScopeMetadataProvider {
 	}
 
 	private static STANDARD_TOKEN_TYPE_REGEXP = /\b(comment|string|regex|meta\.embedded)\b/;
+	/**token类型 */
 	private _toStandardTokenType(tokenType: string): TemporaryStandardTokenType {
 		const m = tokenType.match(ScopeMetadataProvider.STANDARD_TOKEN_TYPE_REGEXP);
 		if (!m) {
@@ -371,7 +402,7 @@ class ScopeMetadataProvider {
 		throw new Error('Unexpected match for standard token type!');
 	}
 }
-
+/**通过注册进行创建语法 */
 export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 
 	private _rootId: number;
@@ -379,15 +410,17 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 	/**配置文件处理过的规则 */
 	private readonly _ruleId2desc: Rule[];
 	private readonly _includedGrammars: { [scopeName: string]: IRawGrammar; };
+	/**语法仓库 就是实例他的人*/
 	private readonly _grammarRepository: IGrammarRepository;
-	/**这个应该是传入的规则稍微加了点,初始化的base是self */
+	/**原始配置,这个应该是传入的规则稍微加了点,初始化的base是self */
 	private readonly _grammar: IRawGrammar;
 	private _injections: Injection[] | null;
 	private readonly _scopeMetadataProvider: ScopeMetadataProvider;
 	private readonly _tokenTypeMatchers: TokenTypeMatcher[];
+	/**wsm */
 	private readonly _onigLib: IOnigLib;
 
-	constructor(grammar: IRawGrammar, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap | null, tokenTypes: ITokenTypeMap | null, grammarRepository: IGrammarRepository & IThemeProvider, onigLib: IOnigLib) {
+	constructor(grammar: IRawGrammar,/**0 */ initialLanguage: number,/**null */ embeddedLanguages: IEmbeddedLanguagesMap | null,/**null */ tokenTypes: ITokenTypeMap | null, grammarRepository: IGrammarRepository & IThemeProvider, onigLib: IOnigLib) {
 		this._scopeMetadataProvider = new ScopeMetadataProvider(initialLanguage, grammarRepository, embeddedLanguages);
 
 		this._onigLib = onigLib;
@@ -420,11 +453,11 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 			}
 		}
 	}
-
+/**调用wasm */
 	public createOnigScanner(sources: string[]): OnigScanner {
 		return this._onigLib.createOnigScanner(sources);
 	}
-
+/**调用wasm */
 	public createOnigString(sources: string): OnigString {
 		return this._onigLib.createOnigString(sources);
 	}
@@ -441,6 +474,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 		if (this._injections === null) {
 			this._injections = [];
 			// add injections from the current grammar
+			// 拿原始配置的注入点
 			const rawInjections = this._grammar.injections;
 			if (rawInjections) {
 				for (let expression in rawInjections) {
@@ -450,12 +484,15 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 
 			// add injection grammars contributed for the current scope
 			if (this._grammarRepository) {
+				/**拿注入点名字? */
 				const injectionScopeNames = this._grammarRepository.injections(this._grammar.scopeName);
 				if (injectionScopeNames) {
 					injectionScopeNames.forEach(injectionScopeName => {
+						/**获得注入点的语法 */
 						const injectionGrammar = this.getExternalGrammar(injectionScopeName);
 						if (injectionGrammar) {
 							const selector = injectionGrammar.injectionSelector;
+							//重新收集
 							if (selector) {
 								collectInjections(this._injections!, selector, injectionGrammar, this, injectionGrammar);
 							}
@@ -463,11 +500,12 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 					});
 				}
 			}
+			// 权限排序
 			this._injections.sort((i1, i2) => i1.priority - i2.priority); // sort by priority
 		}
 		return this._injections;
 	}
-
+/**注册规则?可能要链接到规则文件中 */
 	public registerRule<T extends Rule>(factory: (id: number) => T): T {
 		/**自增id */
 		const id = (++this._lastRuleId);
@@ -475,7 +513,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
 		this._ruleId2desc[id] = result;
 		return result;
 	}
-
+/**从注册中的拿 */
 	public getRule(patternId: number): Rule {
 		return this._ruleId2desc[patternId];
 	}
@@ -557,18 +595,20 @@ function disposeOnigString(str: OnigString) {
 		str.dispose();
 	}
 }
-/**将默认配置深拷贝,加入一些$的属性 */
+/**初始化语法 附加了一些参数 将默认配置深拷贝,加入一些$的属性 */
 function initGrammar(grammar: IRawGrammar, base: IRawRule | null | undefined): IRawGrammar {
 	grammar = clone(grammar);
 //匹配规则
 	grammar.repository = grammar.repository || <any>{};
 	// 多了一个self,也就是把根同样加入了
+	//自身附加 将patterns附加为一个功能
 	grammar.repository.$self = {
 		//这个字段没有
 		$vscodeTextmateLocation: grammar.$vscodeTextmateLocation,
 		patterns: grammar.patterns,
 		name: grammar.scopeName
 	};
+	// 基础
 	grammar.repository.$base = base || grammar.repository.$self;
 	return grammar;
 }

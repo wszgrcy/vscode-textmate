@@ -4,8 +4,9 @@
 
 import { RegexSource, mergeObjects, basename } from './utils';
 import { ILocation, IRawGrammar, IRawRepository, IRawRule, IRawCaptures, IOnigLib, OnigScanner, IOnigCaptureIndex } from './types';
-
+/**\234234 */
 const HAS_BACK_REFERENCES = /\\(\d+)/;
+/**全局的\342 */
 const BACK_REFERENCING_END = /\\(\d+)/g;
 
 export interface IRuleRegistry {
@@ -31,14 +32,14 @@ export class CompiledRule {
 		this.rules = rules;
 		this.scanner = onigLib.createOnigScanner(regExps);
 	}
-
+/**调用scanner的dispose */
 	public dispose(): void {
 		if (typeof this.scanner.dispose === 'function') {
 			this.scanner.dispose();
 		}
 	}
 }
-
+/**抽象规则类 */
 export abstract class Rule {
 
 	public readonly $location: ILocation | undefined;
@@ -61,19 +62,20 @@ export abstract class Rule {
 	}
 
 	public abstract dispose(): void;
-
+/**debug用的名字? */
 	public get debugName(): string {
+		/**类名#id@ 文件名 */
 		const location = this.$location ? `${basename(this.$location.filename)}:${this.$location.line}` : 'unknown';
 		return `${(<any>this.constructor).name}#${this.id} @ ${location}`;
 	}
-
+/**两个名字,没啥用 */
 	public getName(lineText: string | null, captureIndices: IOnigCaptureIndex[] | null): string | null {
 		if (!this._nameIsCapturing || this._name === null || lineText === null || captureIndices === null) {
 			return this._name;
 		}
 		return RegexSource.replaceCaptures(this._name, lineText, captureIndices);
 	}
-
+/**两个名字,没啥用 */
 	public getContentName(lineText: string, captureIndices: IOnigCaptureIndex[]): string | null {
 		if (!this._contentNameIsCapturing || this._contentName === null) {
 			return this._contentName;
@@ -90,7 +92,7 @@ export interface ICompilePatternsResult {
 	readonly patterns: number[];
 	readonly hasMissingPatterns: boolean;
 }
-
+/**一个很普通的实现 */
 export class CaptureRule extends Rule {
 
 	public readonly retokenizeCapturedWithRuleId: number;
@@ -121,7 +123,7 @@ interface IRegExpSourceAnchorCache {
 }
 
 export class RegExpSource {
-
+/**传入regExpSource或者匹配的output */
 	public source: string;
 	public readonly ruleId: number;
 	public hasAnchor: boolean;
@@ -137,14 +139,19 @@ export class RegExpSource {
 
 				let hasAnchor = false;
 				for (let pos = 0; pos < len; pos++) {
+					/**逐字符对比 */
 					const ch = regExpSource.charAt(pos);
 
 					if (ch === '\\') {
+						//未到最后一个
 						if (pos + 1 < len) {
+							/**下一个字符 */
 							const nextCh = regExpSource.charAt(pos + 1);
 							if (nextCh === 'z') {
+								/**输出加入 */
 								output.push(regExpSource.substring(lastPushedPos, pos));
 								output.push('$(?!\\n)(?<!\\n)');
+								/**最后加入 */
 								lastPushedPos = pos + 2;
 							} else if (nextCh === 'A' || nextCh === 'G') {
 								hasAnchor = true;
@@ -155,6 +162,7 @@ export class RegExpSource {
 				}
 
 				this.hasAnchor = hasAnchor;
+				// 如果没\z
 				if (lastPushedPos === 0) {
 					// No \z hit
 					this.source = regExpSource;
@@ -186,7 +194,7 @@ export class RegExpSource {
 	public clone(): RegExpSource {
 		return new RegExpSource(this.source, this.ruleId, true);
 	}
-
+/**每设置一次源就要构建一次缓存 */
 	public setSource(newSource: string): void {
 		if (this.source === newSource) {
 			return;
@@ -202,12 +210,14 @@ export class RegExpSource {
 		let capturedValues = captureIndices.map((capture) => {
 			return lineText.substring(capture.start, capture.end);
 		});
+		//充值
 		BACK_REFERENCING_END.lastIndex = 0;
+		//数字替换为上面的列表里的
 		return this.source.replace(BACK_REFERENCING_END, (match, g1) => {
 			return escapeRegExpCharacters(capturedValues[parseInt(g1, 10)] || '');
 		});
 	}
-
+/**构建锚点缓存 */
 	private _buildAnchorCache(): IRegExpSourceAnchorCache {
 		let A0_G0_result: string[] = [];
 		let A0_G1_result: string[] = [];
@@ -257,7 +267,7 @@ export class RegExpSource {
 			A1_G1: A1_G1_result.join('')
 		};
 	}
-
+/**返回缓存的? */
 	public resolveAnchors(allowA: boolean, allowG: boolean): string {
 		if (!this.hasAnchor || !this._anchorCache) {
 			return this.source;
@@ -470,7 +480,7 @@ export class IncludeOnlyRule extends Rule {
 		return this._cachedCompiledPatterns.compile(grammar, allowA, allowG);
 	}
 }
-
+/** *-+[],#$^|{}. () 替换为\$& */
 function escapeRegExpCharacters(value: string): string {
 	return value.replace(/[\-\\\{\}\*\+\?\|\^\$\.\,\[\]\(\)\#\s]/g, '\\$&');
 }

@@ -35,15 +35,15 @@ function assertTokenizationSuite(testLocation: string): void {
 
 	tests.forEach((test) => {
 
-		tape(test.desc + '-onigasm', async (t: tape.Test) => {
-			await performTest(t, test, getOnigasm());
-			t.end();
-		});
+		// tape(test.desc + '-onigasm', async (t: tape.Test) => {
+		// 	await performTest(t, test, getOnigasm());
+		// 	t.end();
+		// });
 
-		tape(test.desc + '-oniguruma', async (t: tape.Test) => {
-			await performTest(t, test, getOniguruma());
-			t.end();
-		});
+		// tape(test.desc + '-oniguruma', async (t: tape.Test) => {
+		// 	await performTest(t, test, getOniguruma());
+		// 	t.end();
+		// });
 
 		tape(test.desc + '-vscode-oniguruma', async (t: tape.Test) => {
 			await performTest(t, test, getVSCodeOniguruma());
@@ -72,7 +72,9 @@ function assertTokenizationSuite(testLocation: string): void {
 			loadGrammar: (scopeName: string) => Promise.resolve(grammarByScope[scopeName]),
 			getInjections: (scopeName: string) => {
 				if (scopeName === grammarScopeName) {
+					console.log('--------------------------------------->',grammarScopeName,test.grammarInjections,'<----------------------------');
 					return test.grammarInjections;
+					// return undefined;
 				}
 			}
 		};
@@ -112,5 +114,5 @@ function assertTokenizationSuite(testLocation: string): void {
 }
 
 assertTokenizationSuite(path.join(REPO_ROOT, 'test-cases/first-mate/tests.json'));
-assertTokenizationSuite(path.join(REPO_ROOT, 'test-cases/suite1/tests.json'));
-assertTokenizationSuite(path.join(REPO_ROOT, 'test-cases/suite1/whileTests.json'));
+// assertTokenizationSuite(path.join(REPO_ROOT, 'test-cases/suite1/tests.json'));
+// assertTokenizationSuite(path.join(REPO_ROOT, 'test-cases/suite1/whileTests.json'));
