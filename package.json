@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^12.6.2",
+    "@types/oniguruma": "^7.0.1",
     "@types/tape": "^4.13.0",
     "durations": "^3.4.1",
     "onigasm": "^2.2.3",

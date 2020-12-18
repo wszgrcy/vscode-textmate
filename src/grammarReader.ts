@@ -6,7 +6,7 @@ import { IRawGrammar } from './types';
 import * as plist from './plist';
 import { DebugFlags } from './debug';
 import { parse as manualParseJSON } from './json';
-
+/** 单纯解析配置文件的 */
 export function parseRawGrammar(content: string, filePath: string | null = null): IRawGrammar {
 	if (filePath !== null && /\.json$/.test(filePath)) {
 		return parseJSONGrammar(content, filePath);
