@@ -19,15 +19,20 @@ export interface IGrammarRegistry {
 }
 
 export interface IRuleFactoryHelper extends IRuleRegistry, IGrammarRegistry {}
-
+/** 编译规则,其实就是最终调用引入库进行扫描的那个 */
 export class CompiledRule {
     public readonly debugRegExps: string[];
     public readonly rules: number[];
     public readonly scanner: OnigScanner;
 
-    constructor(onigLib: IOnigLib, regExps: string[], rules: number[]) {
+    constructor(
+        onigLib: IOnigLib,
+        /**传入的正则匹配,用于匹配内容 */ regExps: string[],
+        /**正则数组和规则数组是一一对应的 */ rules: number[]
+    ) {
         this.debugRegExps = regExps;
         this.rules = rules;
+        /** 创建这个规则对应的扫描器 */
         this.scanner = onigLib.createOnigScanner(regExps);
     }
     /**调用scanner的dispose */
@@ -37,7 +42,7 @@ export class CompiledRule {
         }
     }
 }
-/**抽象规则类 */
+/**抽象规则类 没什么实际用途 */
 export abstract class Rule {
     public readonly $location: ILocation | undefined;
     public readonly id: number;
@@ -128,7 +133,12 @@ interface IRegExpSourceAnchorCache {
     readonly A1_G0: string;
     readonly A1_G1: string;
 }
-
+/** 正则类,有个A G z参数处理,
+ *
+ * A 是最开始
+ * G 是匹配开始
+ * z 是结束
+ */
 export class RegExpSource {
     /**传入regExpSource或者匹配的output */
     public source: string;
@@ -137,7 +147,7 @@ export class RegExpSource {
     public readonly hasBackReferences: boolean;
     private _anchorCache: IRegExpSourceAnchorCache | null;
 
-    constructor(regExpSource: string, ruleId: number, handleAnchors: boolean = true) {
+    constructor(regExpSource: string, ruleId: number, /**目前这个一定是true*/ handleAnchors: boolean = true) {
         if (handleAnchors) {
             if (regExpSource) {
                 const len = regExpSource.length;
@@ -302,7 +312,9 @@ interface IRegExpSourceListAnchorCache {
 
 export class RegExpSourceList {
     private readonly _items: RegExpSource[];
+    /**只要有一个有锚点,其他的都有了 */
     private _hasAnchors: boolean;
+    /**等于所有_items的规则集合? */
     private _cached: CompiledRule | null;
     private _anchorCache: IRegExpSourceListAnchorCache;
 
@@ -358,7 +370,7 @@ export class RegExpSourceList {
     public length(): number {
         return this._items.length;
     }
-
+    /** 设置列表中某一个的源 */
     public setSource(index: number, newSource: string): void {
         if (this._items[index].source !== newSource) {
             // bust the cache
@@ -486,7 +498,7 @@ export class IncludeOnlyRule extends Rule {
             rule.collectPatternsRecursive(grammar, out, false);
         }
     }
-
+    /** 调用RegExpSourceList的compile,然后RegExpSourceList会将📱的多条规则合到一起 返回的是编译规则,通过编译规则可以进行扫描 */
     public compile(grammar: IRuleRegistry & IOnigLib, endRegexSource: string, allowA: boolean, allowG: boolean): CompiledRule {
         if (!this._cachedCompiledPatterns) {
             this._cachedCompiledPatterns = new RegExpSourceList();

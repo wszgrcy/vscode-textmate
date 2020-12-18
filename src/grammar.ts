@@ -598,6 +598,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper, IOnigLib {
         prevState: StackElement | null,
         emitBinaryTokens: boolean
     ): { lineLength: number; lineTokens: LineTokens; ruleStack: StackElement } {
+        // 初始化时,会将所有规则编译
         if (this._rootId === -1) {
             this._rootId = RuleFactory.getCompiledRuleId(this._grammar.repository.$self, this, this._grammar.repository);
         }
@@ -671,7 +672,7 @@ function initGrammar(grammar: IRawGrammar, base: IRawRule | null | undefined): I
     grammar.repository.$base = base || grammar.repository.$self;
     return grammar;
 }
-
+/**给lineTokens中增加token */
 function handleCaptures(
     grammar: Grammar,
     lineText: OnigString,
@@ -849,12 +850,12 @@ interface IMatchResult {
     readonly captureIndices: IOnigCaptureIndex[];
     readonly matchedRuleId: number;
 }
-
+/** 调用查找到规则,并调用compile返回扫描器,用扫描器进行正则匹配,返回扫描结果 */
 function matchRule(
     grammar: Grammar,
     lineText: OnigString,
     isFirstLine: boolean,
-    linePos: number,
+    /**用于指定这一行开始扫描的位置 */ linePos: number,
     stack: StackElement,
     anchorPosition: number
 ): IMatchResult | null {
@@ -1008,7 +1009,7 @@ function _tokenizeString(
     grammar: Grammar,
     lineText: OnigString,
     isFirstLine: boolean,
-    linePos: number,
+    /**扫描位置 */ linePos: number,
     stack: StackElement,
     lineTokens: LineTokens,
     checkWhileConditions: boolean
@@ -1035,8 +1036,9 @@ function _tokenizeString(
             console.log('');
             console.log(`@@scanNext ${linePos}: |${lineText.content.substr(linePos).replace(/\n$/, '\\n')}|`);
         }
+        /**返回的扫描结果及匹配到的规则 */
         const r = matchRuleOrInjections(grammar, lineText, isFirstLine, linePos, stack, anchorPosition);
-
+        // 这里是没有扫描到规则后的退出
         if (!r) {
             if (DebugFlags.InDebugMode) {
                 console.log('  no more matches.');
@@ -1051,7 +1053,7 @@ function _tokenizeString(
         const matchedRuleId: number = r.matchedRuleId;
 
         const hasAdvanced = captureIndices && captureIndices.length > 0 ? captureIndices[0].end > linePos : false;
-
+        // 如果没匹配到规则
         if (matchedRuleId === -1) {
             // We matched the `end` for this rule => pop it
             const poppedRule = <BeginEndRule>stack.getRule(grammar);
@@ -1093,6 +1095,7 @@ function _tokenizeString(
             const beforePush = stack;
             // push it on the stack rule
             const scopeName = _rule.getName(lineText.content, captureIndices);
+            /**域列表 */
             const nameScopesList = stack.contentNameScopesList.push(grammar, scopeName);
             stack = stack.push(
                 matchedRuleId,
@@ -1238,7 +1241,7 @@ export class StackElementMetadata {
     public static getBackground(metadata: number): number {
         return (metadata & MetadataConsts.BACKGROUND_MASK) >>> MetadataConsts.BACKGROUND_OFFSET;
     }
-
+    /** 如果传入的参数不是0或者空值,那么使用传入的,否则使用元数据中的  */
     public static set(
         metadata: number,
         languageId: number,
@@ -1351,7 +1354,7 @@ export class ScopeListElement {
 
         return false;
     }
-
+    /** 元数据合并,source提供相关参数与传入的metadata合并,scopesList是用来匹配的 */
     public static mergeMetadata(metadata: number, scopesList: ScopeListElement | null, source: ScopeMetadata): number {
         if (source === null) {
             return metadata;
@@ -1381,13 +1384,14 @@ export class ScopeListElement {
     private static _push(target: ScopeListElement, grammar: Grammar, scopes: string[]): ScopeListElement {
         for (let i = 0, len = scopes.length; i < len; i++) {
             const scope = scopes[i];
+            /**拿元数据,如果没生成过就现生成一条 */
             const rawMetadata = grammar.getMetadataForScope(scope);
             const metadata = ScopeListElement.mergeMetadata(target.metadata, target, rawMetadata);
             target = new ScopeListElement(target, scope, metadata);
         }
         return target;
     }
-
+    /** 就是将父级的数据叠加到子一级上来 返回一个有元数据叠加的新的域列表元素 */
     public push(grammar: Grammar, scope: string | null): ScopeListElement {
         if (scope === null) {
             return this;
@@ -1399,7 +1403,7 @@ export class ScopeListElement {
         // there is a single scope to push
         return ScopeListElement._push(this, grammar, [scope]);
     }
-    /** 生成域的序列 */
+    /** 生成域的列表按照从大到小的范围排列*/
     private static _generateScopes(scopesList: ScopeListElement | null): string[] {
         const result: string[] = [];
         let resultLen = 0;
@@ -1410,7 +1414,7 @@ export class ScopeListElement {
         result.reverse();
         return result;
     }
-    /** 告诉这一行一共有几个token */
+    /** 告诉这匹配到的内容的域列表 返回范围从大到小 */
     public generateScopes(): string[] {
         return ScopeListElement._generateScopes(this);
     }
@@ -1418,6 +1422,7 @@ export class ScopeListElement {
 
 /**
  * Represents a "pushed" state on the stack (as a linked list element).
+ * 栈元素
  */
 export class StackElement implements StackElementDef {
     _stackElementBrand: void;
@@ -1539,7 +1544,7 @@ export class StackElement implements StackElementDef {
         }
         return StackElement._equals(this, other);
     }
-
+    /** 重置自身及父级的位置 _enterPos _anchorPos */
     private static _reset(el: StackElement | null): void {
         while (el) {
             el._enterPos = -1;
@@ -1602,7 +1607,7 @@ export class StackElement implements StackElementDef {
         this._writeString(r, 0);
         return '[' + r.join(',') + ']';
     }
-
+    /** 设置内容名域列表等于push了一次 */
     public setContentNameScopesList(contentNameScopesList: ScopeListElement): StackElement {
         if (this.contentNameScopesList === contentNameScopesList) {
             return this;
@@ -1653,8 +1658,9 @@ interface TokenTypeMatcher {
     readonly matcher: Matcher<string[]>;
     readonly type: StandardTokenType;
 }
-
+/** 用来保存这一行时什么结构的 */
 class LineTokens {
+    /** tokenizeLine是false tokenizeLine2是true */
     private readonly _emitBinaryTokens: boolean;
     /**
      * defined only if `DebugFlags.InDebugMode`.
@@ -1675,10 +1681,10 @@ class LineTokens {
     private readonly _tokenTypeOverrides: TokenTypeMatcher[];
 
     /**
-     *Creates an instance of LineTokens.
+     *Creates an instance of LineTokens. 构造无具体逻辑,仅仅是赋值
      * @author cyia
      * @date 2020-09-06
-     * @param emitBinaryTokens 默认true
+     * @param emitBinaryTokens 大多数是false
      * @param lineText 字符串
      * @param tokenTypeOverrides 空数组
      */

@@ -122,3 +122,5 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 ## License
 [MIT](https://github.com/Microsoft/vscode-textmate/blob/master/LICENSE.md)
 
+# 学习
+- StackElement被LineTokens使用,用来追加列表token
