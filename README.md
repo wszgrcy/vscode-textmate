@@ -122,5 +122,11 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 ## License
 [MIT](https://github.com/Microsoft/vscode-textmate/blob/master/LICENSE.md)
 
+# 构建库步骤
+- 通过onig进行匹配
+- 有无wasm下的降级操作
+- 将token返回的数据生成
+- 解压主题并调用(只使用代码高亮部分,其他部分不使用)
+- Inject token的支持
 # 学习
 - StackElement被LineTokens使用,用来追加列表token
